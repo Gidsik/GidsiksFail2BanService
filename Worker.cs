@@ -12,6 +12,7 @@ namespace Gidsiks.Fail2BanService
 
 		public override Task StartAsync(CancellationToken cancellationToken)
 		{
+			_logger.LogTrace("BackgroudService Started at: {time}", DateTimeOffset.UtcNow);
 			_fail2Ban = new Fail2Ban();
 			return base.StartAsync(cancellationToken);
 		}
@@ -20,15 +21,16 @@ namespace Gidsiks.Fail2BanService
 		{
 			while (!stoppingToken.IsCancellationRequested)
 			{
-				//_logger.LogTrace("Checking at: {time}", DateTimeOffset.Now);
-				//_fail2Ban.Check();
-				//await Task.Delay(TimeSpan.FromMilliseconds(2000), stoppingToken);
-				await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+				_logger.LogTrace("BackgroudService Executed at: {time}", DateTimeOffset.Now);
+				_fail2Ban.Check();
+				await Task.Delay(TimeSpan.FromMilliseconds(20000), stoppingToken);
+				//await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
 			}
 		}
 
 		public override Task StopAsync(CancellationToken cancellationToken)
 		{
+			_logger.LogTrace("BackgroudService Stopped at: {time}", DateTimeOffset.UtcNow);
 			_fail2Ban.Stop();
 			return base.StopAsync(cancellationToken);
 		}

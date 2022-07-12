@@ -6,9 +6,9 @@ namespace Gidsiks.Fail2BanService.Services
 	internal class MSSQLLogon : IScumableService
 	{
 		/// <summary>
-		/// This struct only purpose is to store data about attempts by given IP
+		/// This class only purpose is to store data about attempts by given IP
 		/// </summary>
-		struct MSSQLLogonAttemptEntry
+		class MSSQLLogonAttemptEntry
 		{
 			private string _ip;
 			private List<string> _triedLogins;
@@ -124,24 +124,33 @@ namespace Gidsiks.Fail2BanService.Services
 			string ip = (string)recProp[2].Value;
 			Match m = Regex.Match(ip, Fail2Ban.IpRegexPattern);
 			if (m.Success) { ip = m.Value; }
+			else { ip = String.Empty; }
 			DateTime tryTime = (rec.TimeCreated ?? DateTime.UtcNow).ToUniversalTime();
+
 
 			if (_attemptsBy.ContainsKey(ip))
 			{
-				if ((DateTime.UtcNow - _attemptsBy[ip].LastTryTime).TotalMinutes > 1) 
-				{ 
+				if ((DateTime.UtcNow - _attemptsBy[ip].LastTryTime).TotalMinutes > 1)
+				{
+					_logger.LogInformation("Number of login attempts for Ip [{ip}] reseted", ip);
 					_attemptsBy[ip].ResetAttempts(); 
 				}
 				_attemptsBy[ip].IncAttempts(login, tryTime);
+				_logger.LogInformation("Ip [{ip}] attempts to logon as [{login}] x[{times}] time", ip, login, _attemptsBy[ip].TriesCount);
 				if (_attemptsBy[ip].TriesCount > _maxFailedLogonCount)
 				{
 					_logger.LogWarning("Ip [{ip}] has exceeded the number of login attempts in a minute", ip);
 					FailedEnough(ip);
 				}
 			}
+			else if (!ip.Equals(String.Empty))
+			{
+				_logger.LogInformation("Ip [{ip}] attempts to logon as [{login}] x[1] time", ip, login);
+				_attemptsBy.Add(ip, new MSSQLLogonAttemptEntry(ip, login, tryTime));
+			}
 			else
 			{
-				_attemptsBy.Add(ip, new MSSQLLogonAttemptEntry(ip, login, tryTime));
+				_logger.LogInformation("Attempts to logon as [{login}] from incorrect or local IP [{ip}]", login, (string)recProp[2].Value);
 			}
 
 		}
