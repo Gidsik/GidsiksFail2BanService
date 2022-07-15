@@ -2,7 +2,7 @@ namespace Gidsiks.Fail2BanService
 {
 	public class Program
 	{
-		private static IHost host;
+		private static IHost host = default!;
 
 		public static void Main(string[] args)
 		{

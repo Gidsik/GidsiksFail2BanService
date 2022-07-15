@@ -22,13 +22,25 @@ namespace Gidsiks.Fail2BanService
 
 		List<IScumableService> fail2banServices = new() 
 		{ 
-			new MSSQLLogon()
+			new MSSQLLogon(),
+			new RDPLogon()
 		};
 
 		/// <summary>
 		/// Constructor subscribes to all IScumableServices
 		/// </summary>
 		public Fail2Ban()
+		{
+			foreach (var service in fail2banServices)
+			{
+				service.FailedEnough += BanIP;
+			}
+		}
+
+		/// <summary>
+		/// Subscribe to all IScumableServices
+		/// </summary>
+		public void Start()
 		{
 			foreach (var service in fail2banServices)
 			{
@@ -51,8 +63,7 @@ namespace Gidsiks.Fail2BanService
 		/// <summary>
 		/// Adds given IP address to the firewall blacklist rule
 		/// </summary>
-		/// <param name="ip">IP address to BAN</param>
-		public void BanIP(string ip)
+		public void BanIP(object sender, FailedEnoughEventArgs args)
 		{
 			_logger.LogTrace("BanIP");
 			if (!FirewallManager.IsServiceRunning)
@@ -62,12 +73,12 @@ namespace Gidsiks.Fail2BanService
 			}
 
 			System.Net.IPAddress systemIP;// = SingleIP.Parse(ip);
-			if (!System.Net.IPAddress.TryParse(ip, out systemIP!))
+			if (!System.Net.IPAddress.TryParse(args.IP, out systemIP!))
 			{
 				_logger.LogError("Adding to ban fist failed. Incorrect IP Address");
 				return;
 			}
-			SingleIP singleIP = new SingleIP(systemIP);
+			var singleIP = new SingleIP(systemIP);
 
 			var rule = FirewallManager.Instance.Rules
 				.SingleOrDefault(r => r.Name.Equals(FirewallRuleName));
@@ -92,8 +103,10 @@ namespace Gidsiks.Fail2BanService
 								FirewallRuleName,
 								FirewallAction.Block,
 								FirewallDirection.Inbound,
-								FirewallProfiles.Domain | FirewallProfiles.Private | FirewallProfiles.Public);
-				rule.RemoteAddresses = singleIPArray;
+								FirewallProfiles.Domain | FirewallProfiles.Private | FirewallProfiles.Public)
+				{
+					RemoteAddresses = singleIPArray
+				};               
 				return rule;
 			}
 		}

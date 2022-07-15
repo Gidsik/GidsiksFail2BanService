@@ -33,8 +33,4 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0" />
 		<PackageReference Include="WindowsFirewallHelper" Version="2.2.0.86" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Sources\" />
-	</ItemGroup>
 </Project>
