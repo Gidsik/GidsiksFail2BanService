@@ -1,0 +1,9 @@
+<Project>
+	<PropertyGroup>
+		<Product>GidsiksFail2BanService</Product>
+		<Authors>Gidsik</Authors>
+		<Copyright>© 2022 - George Volhovitskiy aka Gidsik</Copyright>
+		
+		<Version>0.2.1</Version>
+	</PropertyGroup>
+</Project>
