@@ -80,27 +80,42 @@ namespace Gidsiks.Fail2BanService
 			}
 			var singleIP = new SingleIP(systemIP);
 
-			var rule = FirewallManager.Instance.Rules
-				.SingleOrDefault(r => r.Name.Equals(FirewallRuleName));
+			var rulesList = FirewallManager.Instance.Rules
+				.Where(r => r.Name.Contains(FirewallRuleName));
 
-			if (rule is not null)				
+			if (rulesList.Any())				
 			{
-				_logger.LogInformation("BlackList Rule already exists. Adding new ip to the BlackList");
+				foreach(var rule in rulesList)
+				{
+					
+					if (rule.RemoteAddresses.Length >= 500)
+					{
+						continue;
+					}
+					else
+					{
+						_logger.LogInformation("BlackList Rule already exists. Adding new ip to the BlackList");
+						rule.RemoteAddresses = rule.RemoteAddresses.Append(singleIP).ToArray();
+						return;
+					}
+				}
+				_logger.LogInformation("BlackList Rule contains too many adressed. Adding new BlackList Rule");
+				var newRule = CreateRule(new SingleIP[] { singleIP }, rulesList.Count() + 1);
 
-				rule.RemoteAddresses = rule.RemoteAddresses.Append(singleIP).ToArray();
+				FirewallManager.Instance.Rules.Add(newRule);
 			}
 			else
 			{
 				_logger.LogInformation("Adding new BlackList Rule");
-				rule = CreateRule(new SingleIP[] { singleIP });
+				var newRule = CreateRule(new SingleIP[] { singleIP });
 
-				FirewallManager.Instance.Rules.Add(rule);
+				FirewallManager.Instance.Rules.Add(newRule);
 			}
 
-			IFirewallRule CreateRule(IAddress[] singleIPArray)
+			IFirewallRule CreateRule(IAddress[] singleIPArray, int? rullNum = null)
 			{
 				IFirewallRule? rule = new FirewallWASRule(
-								FirewallRuleName,
+								FirewallRuleName + (rullNum is null ? "" : $" #{rullNum}"),
 								FirewallAction.Block,
 								FirewallDirection.Inbound,
 								FirewallProfiles.Domain | FirewallProfiles.Private | FirewallProfiles.Public)

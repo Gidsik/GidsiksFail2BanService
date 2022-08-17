@@ -1,0 +1,96 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<!--
+		In order for the versions assigned here to take effect, we need to execute this target at an early stage:
+		before 'Restore' target - '_GenerateRestoreProjectSpec'
+		before 'Pack' target    - 'GenerateNuspec'
+		before 'Build' target   - 'BeforeBuild'
+		-->
+	<Target Name="GetMyVersionFromGit"
+		BeforeTargets="_GenerateRestoreProjectSpec;GenerateNuspec;BeforeBuild">
+
+		<Exec Command='git describe --tags --abbrev=8 --long'
+				WorkingDirectory="$(MSBuildProjectDirectory)"
+				ConsoleToMSBuild="true"
+				StandardOutputImportance="Low">
+			<Output TaskParameter="ConsoleOutput" PropertyName="TagBasedVersion" />
+		</Exec>
+
+		<PropertyGroup>
+			<RegexGitVersion>^v(.+)-(\d+)-g(.+)</RegexGitVersion>
+			<RegexReleaseTag>^((\d+).(\d+).(\d+))(-(\w+)(.(\d+))?)?$</RegexReleaseTag>
+			<!--ReleaseTag>0.1.1-release.3</ReleaseTag-->
+		</PropertyGroup>
+		
+		<PropertyGroup Condition = "'$(ReleaseTag)' != ''">
+			<!-- parse the release tag into the parts we need -->
+			<ReleaseTagVersionPart>$([System.Text.RegularExpressions.Regex]::Match($(ReleaseTag), $(RegexReleaseTag)).Groups[1].Value)</ReleaseTagVersionPart>
+			<ReleaseTagSemVersionPart>$([System.Text.RegularExpressions.Regex]::Match($(ReleaseTag), $(RegexReleaseTag)).Groups[8].Value)</ReleaseTagSemVersionPart>
+			<ReleaseTagSemVersionPrereleaseNamePart>$([System.Text.RegularExpressions.Regex]::Match($(ReleaseTag), $(RegexReleaseTag)).Groups[6].Value)</ReleaseTagSemVersionPrereleaseNamePart>
+			<MyAdditionalCommits>$([System.Text.RegularExpressions.Regex]::Match($(TagBasedVersion), $(RegexGitVersion)).Groups[2].Value)</MyAdditionalCommits>
+			
+			<!-- Create the internal version -->
+			<MyBuildVersion>$(ReleaseTag)</MyBuildVersion>
+			<!-- Create the version if we have a pre-release -->
+			<MyFileVersion Condition = "'$(ReleaseTagSemVersionPart)' != ''">$(ReleaseTagVersionPart).$(ReleaseTagSemVersionPart)</MyFileVersion>
+		</PropertyGroup>
+
+		<PropertyGroup>
+			<MyAdditionalCommits>$([System.Text.RegularExpressions.Regex]::Match($(TagBasedVersion), $(RegexGitVersion)).Groups[2].Value)</MyAdditionalCommits>
+			<MyFileVersion Condition = "'$(MyFileVersion)' == ''">$([System.Text.RegularExpressions.Regex]::Match($(TagBasedVersion), $(RegexGitVersion)).Groups[1].Value).$(MyAdditionalCommits)</MyFileVersion>
+			<MyBuildVersion Condition = "'$(MyBuildVersion)' == ''">$([System.Text.RegularExpressions.Regex]::Match($(TagBasedVersion), $(RegexGitVersion)).Groups[1].Value)</MyBuildVersion>
+			<MyCommitSHA>$([System.Text.RegularExpressions.Regex]::Match($(TagBasedVersion), $(RegexGitVersion)).Groups[3].Value)</MyCommitSHA>
+
+			<MyFormattedVersion Condition = "'$(ReleaseTag)' != '' or '$(MyAdditionalCommits)' == '0'">$(MyFileVersion) SHA: $(MyCommitSHA)</MyFormattedVersion>
+			<MyFormattedVersion Condition = "'$(MyFormattedVersion)' == ''">$(MyFileVersion) Commits: $(MyAdditionalCommits) SHA: $(MyCommitSHA)</MyFormattedVersion>
+
+			<RegexSymVer>^((\d+).(\d+).(\d+))(?:-(.+))?</RegexSymVer>
+			<MyPrefixVersion>$([System.Text.RegularExpressions.Regex]::Match($(MyBuildVersion), $(RegexSymVer)).Groups[1].Value)</MyPrefixVersion>
+			<MyMajorVersion>$([System.Text.RegularExpressions.Regex]::Match($(MyBuildVersion), $(RegexSymVer)).Groups[2].Value)</MyMajorVersion>
+			<MyMinorVersion>$([System.Text.RegularExpressions.Regex]::Match($(MyBuildVersion), $(RegexSymVer)).Groups[3].Value)</MyMinorVersion>
+			<MyPatchVersion>$([System.Text.RegularExpressions.Regex]::Match($(MyBuildVersion), $(RegexSymVer)).Groups[4].Value)</MyPatchVersion>
+			<MyLabelVersion>$([System.Text.RegularExpressions.Regex]::Match($(MyBuildVersion), $(RegexSymVer)).Groups[5].Value)</MyLabelVersion>
+			
+			<Version>$(MyFileVersion)</Version>
+			<InformationalVersion>$(MyFormattedVersion)</InformationalVersion>
+			<ProductVersion>$(MyFormattedVersion)</ProductVersion>
+
+			<PackageVersion>$(MyBuildVersion)</PackageVersion>
+
+		</PropertyGroup>
+
+		<!-- Output For Debugging -->
+		<WriteLinesToFile File="VersionMSBuildOutput.txt"
+						Lines="ReleaseTag=$(ReleaseTag);
+				TagBasedVersion = $(TagBasedVersion);
+				MyBuildVersion = $(MyBuildVersion);
+				MyFileVersion = $(MyFileVersion);
+				ReleaseTagVersionPart = $(ReleaseTagVersionPart);
+				ReleaseTagSemVersionPart = $(ReleaseTagSemVersionPart);
+				ReleaseTagSemVersionPrereleaseNamePart = $(ReleaseTagSemVersionPrereleaseNamePart);
+				MyAdditionalCommits = $(MyAdditionalCommits);
+				MyCommitSHA = $(MyCommitSHA);
+				
+				MyMajorVersion = $(MyMajorVersion);
+				MyMinorVersion = $(MyMinorVersion);
+				MyPatchVersion = $(MyPatchVersion);
+				MyLabelVersion = $(MyLabelVersion);
+				
+				RegexGitVersion = $(RegexGitVersion);
+				MyFormattedVersion = $(MyFormattedVersion);
+				ProductVersion = $(ProductVersion);
+				Version = $(Version);
+				ProjectVersion = '!$(ProjectVersion)!'
+				InformationalVersion = $(InformationalVersion);
+				"
+			Overwrite="true" />
+	
+
+	</Target>
+
+	<PropertyGroup>
+		<Product>GidsiksFail2BanService</Product>
+		<Authors>Gidsik</Authors>
+		<Copyright>© 2022 - George Volhovitskiy aka Gidsik</Copyright>
+	</PropertyGroup>
+
+</Project>
