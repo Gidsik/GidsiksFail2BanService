@@ -90,6 +90,7 @@
 	<PropertyGroup>
 		<Product>GidsiksFail2BanService</Product>
 		<Authors>Gidsik</Authors>
+		<Company>Gidsik</Company>
 		<Copyright>© 2022 - George Volhovitskiy aka Gidsik</Copyright>
 	</PropertyGroup>
 

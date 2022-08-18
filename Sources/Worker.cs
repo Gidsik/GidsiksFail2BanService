@@ -14,6 +14,7 @@ namespace Gidsiks.Fail2BanService
 		public override Task StartAsync(CancellationToken cancellationToken)
 		{
 			_logger.LogTrace("BackgroudService Started at: {time}", DateTimeOffset.UtcNow);
+			Settings.SettingsManager.LoadSettings();
 			_fail2Ban.Start();
 			return base.StartAsync(cancellationToken);
 		}
@@ -33,6 +34,7 @@ namespace Gidsiks.Fail2BanService
 		{
 			_logger.LogTrace("BackgroudService Stopped at: {time}", DateTimeOffset.UtcNow);
 			_fail2Ban.Stop();
+			Settings.SettingsManager.StoreSettings();
 			return base.StopAsync(cancellationToken);
 		}
 
